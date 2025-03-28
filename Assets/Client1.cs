@@ -162,21 +162,27 @@ public class Client1 : MonoBehaviour
         }
     }
 
-    //Position Updates: 
+    //Position and Velocity Updates: 
     private void SendPositionIfMoved()
     {
         Vector3 currentPos = Client1Cube.transform.position;
+        Vector3 currentVelo = (currentPos - lastPositionClient1) / networkUpdateRate;
+
         if (currentPos != lastPositionClient1)
         {
             lastPositionClient1 = currentPos;
-            byte[] posData = new byte[12];
+            byte[] data = new byte[24];
             //https://learn.microsoft.com/en-us/dotnet/api/system.bitconverter.getbytes?view=net-9.0
-            Buffer.BlockCopy(BitConverter.GetBytes(currentPos.x), 0, posData, 0, 4);
-            Buffer.BlockCopy(BitConverter.GetBytes(currentPos.y), 0, posData, 4, 4);
-            Buffer.BlockCopy(BitConverter.GetBytes(currentPos.z), 0, posData, 8, 4);
 
-            UDPClient1.SendTo(posData, serverEndPoint);
-            Debug.Log("Client 1 Sent Position To Server: " + currentPos);
+            Buffer.BlockCopy(BitConverter.GetBytes(currentPos.x), 0, data, 0, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(currentPos.y), 0, data, 4, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(currentPos.z), 0, data, 8, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(currentVelo.x), 0, data, 12, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(currentVelo.y), 0, data, 16, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(currentVelo.z), 0, data, 20, 4);
+
+            UDPClient1.SendTo(data, serverEndPoint);
+            Debug.Log("Client 1 Sent Position: " + currentPos + " and Velocity: " + currentVelo + " To the Server");
         }
     }
 
