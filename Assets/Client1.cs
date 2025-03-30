@@ -197,6 +197,31 @@ public class Client1 : MonoBehaviour
     {
         int rec = UDPClient1.EndReceiveFrom(result, ref serverEndPoint);
 
+        string message = Encoding.ASCII.GetString(UDPBuffer, 0, rec);
+        Debug.Log("Received UDP Message: " + message);
+
+        string[] data = message.Split(',');
+
+        if (data[0] == "coin_spawn" && data.Length == 4)
+        {
+            float x = float.Parse(data[1]);
+            float y = float.Parse(data[2]);
+            float z = float.Parse(data[3]);
+
+            UnityMainThreadDispatcher.Enqueue(() => SpawnCoin(new Vector3(x, y, z)));
+        }
+        else if (data[0] == "coin_collected" && data.Length == 4)
+        {
+            float x = float.Parse(data[1]);
+            float y = float.Parse(data[2]);
+            float z = float.Parse(data[3]);
+
+            UnityMainThreadDispatcher.Enqueue(() => RemoveCoin(new Vector3(x, y, z)));
+        }
+
+        // Continue receiving data
+        UDPClient1.BeginReceiveFrom(UDPBuffer, 0, UDPBuffer.Length, 0, ref serverEndPoint, new AsyncCallback(ReceiveUDPCallback), UDPClient1);
+
         if (rec > 0)
         {
             float[] pos = new float[rec / 4];
@@ -225,8 +250,29 @@ public class Client1 : MonoBehaviour
 
         // Continue receiving data
         UDPClient1.BeginReceiveFrom(UDPBuffer, 0, UDPBuffer.Length, 0, ref serverEndPoint, new AsyncCallback(ReceiveUDPCallback), UDPClient1);
-       
+
     }
+
+    public static void SpawnCoin(Vector3 position)
+    {
+        GameObject coinPrefab = Resources.Load<GameObject>("CoinPrefab"); // Ensure you have this prefab in a "Resources" folder
+        GameObject coin = Instantiate(coinPrefab, position, Quaternion.identity);
+        coin.tag = "Coin";
+    }
+
+    public static void RemoveCoin(Vector3 position)
+    {
+        GameObject[] coins = GameObject.FindGameObjectsWithTag("Coin");
+        foreach (GameObject coin in coins)
+        {
+            if (Vector3.Distance(coin.transform.position, position) < 0.1f)
+            {
+                Destroy(coin);
+                break;
+            }
+        }
+    }
+
     private void OnApplicationQuit()
     {
         CloseConnections();
