@@ -17,7 +17,9 @@ public class ClientCoinManager : MonoBehaviour
     void Start()
     {
         UDPClient1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        UDPClient1.Bind(new IPEndPoint(IPAddress.Any, 8889)); // Assuming 8889 for UDP
+        UDPClient1.Bind(new IPEndPoint(IPAddress.Any, 0)); 
+
+        serverEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8889);
 
         // Start receiving coin data from the server
         UDPClient1.BeginReceiveFrom(UDPBuffer, 0, UDPBuffer.Length, 0, ref serverEndPoint, new AsyncCallback(ReceiveUDPCallback), UDPClient1);
