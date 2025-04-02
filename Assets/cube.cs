@@ -9,8 +9,8 @@ using System.Net.Sockets;
 public class cube : MonoBehaviour
 {
 
-    private static Socket UDPClient1; // Make sure this is initialized from your other networking scripts
-    private static EndPoint serverEndPoint; // Same for this one
+    private static Socket UDPClient1;
+    private static EndPoint serverEndPoint;
 
     // Start is called before the first frame update
     void Start()
@@ -25,6 +25,8 @@ public class cube : MonoBehaviour
             serverEndPoint = new IPEndPoint(serverIP, 8889);
             Debug.Log($"testing {serverEndPoint}");
         }
+
+        // This makes sure the client is connected to the server so the server can recieve the info from the clients
     }
 
     // Update is called once per frame
@@ -43,8 +45,7 @@ public class cube : MonoBehaviour
 
             // Send the collected coin message to the server
             UDPClient1.SendTo(data, serverEndPoint);
-
-            // Destroy the coin locally (you could also remove it via the server, depending on your setup)
+            // Destroys the coin
             Destroy(other.gameObject);
         }
     }
