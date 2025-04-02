@@ -16,6 +16,15 @@ public class cube : MonoBehaviour
     void Start()
     {
 
+        UDPClient1 = Client1.UDPClient1;
+
+        string ipAddress = "127.0.0.1";
+
+        if (IPAddress.TryParse(ipAddress, out IPAddress serverIP))
+        {
+            serverEndPoint = new IPEndPoint(serverIP, 8889);
+            Debug.Log($"testing {serverEndPoint}");
+        }
     }
 
     // Update is called once per frame

@@ -12,7 +12,7 @@ using UnityEditor;
 public class Client1 : MonoBehaviour
 {
     private static Socket TCPClient1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-    private static Socket UDPClient1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+    public static Socket UDPClient1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
     private static byte[] TCPBuffer = new byte[1024];
     private static byte[] UDPBuffer = new byte[1024];
     private static EndPoint serverEndPoint;
