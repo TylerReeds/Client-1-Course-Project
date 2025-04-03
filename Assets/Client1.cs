@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -11,7 +12,7 @@ using UnityEditor;
 
 public class Client1 : MonoBehaviour
 {
-    private static Socket TCPClient1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+    public static Socket TCPClient1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     public static Socket UDPClient1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
     private static byte[] TCPBuffer = new byte[1024];
     private static byte[] UDPBuffer = new byte[1024];
@@ -25,19 +26,27 @@ public class Client1 : MonoBehaviour
 
     public InputField chatInput;
     public InputField serverIPInput;
+    public InputField clientNameInput;
     public Text chatText;
     public static string msg;
     public GameObject popup;
     public static bool SendPos = false;
     public Button sendButton;
     public Button connectButton;
+    public Button nameButton;
 
     private static Queue<Vector3> positionQueue = new Queue<Vector3>();
+
+    private static float Client1Score;
 
     //For Dead Reckoning 
     private static Vector3 predictedPosClient2;
     private static Vector3 veloClient2;
     private static float lastRecTimeClient2;
+
+    //Leaderboard
+    public Text leaderboardVals;
+    public static string leaderboardText;
 
     private void Start()
     {
@@ -49,6 +58,8 @@ public class Client1 : MonoBehaviour
         connectButton.onClick.AddListener(ConnectToServer);
 
         sendButton.onClick.AddListener(SendChatMessageFromUI);
+
+        nameButton.onClick.AddListener(SendName);
     }
 
     //Connects to server once connect button is clicked
@@ -77,7 +88,7 @@ public class Client1 : MonoBehaviour
 
         TCPClient1.BeginReceive(TCPBuffer, 0, TCPBuffer.Length, 0, new AsyncCallback(ReceiveTCPCallback), TCPClient1);
         UDPClient1.BeginReceiveFrom(UDPBuffer, 0, UDPBuffer.Length, 0, ref serverEndPoint, new AsyncCallback(ReceiveUDPCallback), UDPClient1);
-        
+
         //Error Prevention so the client doesn't send position right when it connects. 
         SendPos = true;
     }
@@ -105,7 +116,14 @@ public class Client1 : MonoBehaviour
             }
         }
 
+        if (Client1Score != cube.client1Score)
+        {
+            Client1Score = cube.client1Score;
+            SendClientScore();
+        }
+
         chatText.text = msg;
+        leaderboardVals.text = leaderboardText;
     }
 
     //Chat: 
@@ -115,8 +133,24 @@ public class Client1 : MonoBehaviour
         int rec = socket.EndReceive(result);
 
         string message = Encoding.ASCII.GetString(TCPBuffer, 0, rec);
-        msg = message;
-        Debug.Log("Received Chat Message From Client 2: " + message);
+        
+        if (message.Contains("LeaderboardVals:"))
+        {
+            string[] s = message.Split(' ');
+            List<string> joinedString = new List<string>();
+
+            for(int i = 0; i < s.Length - 1; i++)
+            {
+                joinedString.Add(s[i + 1]);
+            }
+
+            leaderboardText = string.Join("", joinedString);
+        }
+        else
+        {
+            Debug.Log("Received Chat Message From Client 2: " + message);
+            msg = message;
+        }
 
         socket.BeginReceive(TCPBuffer, 0, TCPBuffer.Length, 0, new AsyncCallback(ReceiveTCPCallback), socket);
     }
@@ -140,11 +174,11 @@ public class Client1 : MonoBehaviour
 
                 CloseConnections();
 
-            #if UNITY_EDITOR
+#if UNITY_EDITOR
                 EditorApplication.isPlaying = false;
-            #else
+#else
                 Application.Quit();
-            #endif
+#endif
             }
 
             if (!string.IsNullOrEmpty(message))
@@ -162,7 +196,7 @@ public class Client1 : MonoBehaviour
                 chatInput.ActivateInputField();
             }
         }
-    
+
         else
         {
             Debug.LogWarning("TCP Socket is not connected. Cannot send message.");
@@ -291,6 +325,59 @@ public class Client1 : MonoBehaviour
         {
             UDPClient1.Close();
             Debug.Log("UDP Connection Closed");
+        }
+    }
+
+    private void SendName()
+    {
+        string name = clientNameInput.text;
+
+        //Checks if TCP Client is Valid
+        if (TCPClient1 != null && TCPClient1.Connected)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                byte[] nameBytes = Encoding.ASCII.GetBytes($"Name: {name}");
+                try
+                {
+                    TCPClient1.BeginSend(nameBytes, 0, nameBytes.Length, 0, new AsyncCallback(SendTCPCallback), TCPClient1);
+                }
+                catch (ObjectDisposedException) //https://learn.microsoft.com/en-us/dotnet/api/system.objectdisposedexception?view=net-9.0
+                {
+                    Debug.LogWarning("Socket has been disposed. Cannot send message.");
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning("TCP Socket is not connected. Cannot send message.");
+        }
+    }
+
+    private void SendClientScore()
+    {
+        string scoreAsString = Client1Score.ToString();
+
+        //Checks if TCP Client is Valid
+        if (TCPClient1 != null && TCPClient1.Connected)
+        {
+            if (!string.IsNullOrEmpty(scoreAsString))
+            {
+                byte[] scoreBytes = Encoding.ASCII.GetBytes($"Score: {scoreAsString}");
+                try
+                {
+                    TCPClient1.BeginSend(scoreBytes, 0, scoreBytes.Length, 0, new AsyncCallback(SendTCPCallback), TCPClient1);
+                }
+                catch (ObjectDisposedException) //https://learn.microsoft.com/en-us/dotnet/api/system.objectdisposedexception?view=net-9.0
+                {
+                    Debug.LogWarning("Socket has been disposed. Cannot send message.");
+                }
+            }
+        }
+
+        else
+        {
+            Debug.LogWarning("TCP Socket is not connected. Cannot send message.");
         }
     }
 }

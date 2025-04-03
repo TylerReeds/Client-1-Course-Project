@@ -8,14 +8,15 @@ using System.Net.Sockets;
 
 public class cube : MonoBehaviour
 {
-
+    public static float client1Score = 0;
     private static Socket UDPClient1;
+    private static Socket TCPClient1;
     private static EndPoint serverEndPoint;
 
     // Start is called before the first frame update
     void Start()
     {
-
+        TCPClient1 = Client1.TCPClient1;
         UDPClient1 = Client1.UDPClient1;
 
         string ipAddress = "127.0.0.1";
@@ -41,7 +42,9 @@ public class cube : MonoBehaviour
         if (other.CompareTag("Coin")) // Check if the collided object is a coin
         {
             string message = $"coin_collected,{other.transform.position.x},{other.transform.position.y},{other.transform.position.z}";
+            client1Score += 10;
             byte[] data = Encoding.ASCII.GetBytes(message);
+            byte[] scoreData = Encoding.ASCII.GetBytes($"Score: {client1Score}");
 
             // Send the collected coin message to the server
             UDPClient1.SendTo(data, serverEndPoint);
